@@ -1,0 +1,10 @@
+build
+doxygen
+*.dylib
+*.so
+/RooUnfoldConfig.cmake
+
+# python
+*.egg-info
+__pycache__
+src/RooUnfold
