@@ -46,6 +46,8 @@ s.main()
 
 Users will then be given two different prompts. The first will indicate if you wish to look at the distributions using the nomial binning (0 = pelee) or with the optimized cross section binning (1 = pelee with xsec binning). The second prompt will ask which run you wish to process. You can find all the various histograms and definitions within tools/constants.h. Note that a few vaiables have been commented out, such as pn aand neutrino energy. This is because they were problem variables and never made it into the final analysis plots.
 
+- xsec_prep.C: Run this after you have run analysis.C. It produces the smearing matrices and the efficiency curves used in the cross section extraction
+
 ### NuWro Folder
 This folder contains code to create the event distributions using the NuWro overlay MC. The NuWro sample was generated in a similar way to the MCC9 Overlay MC, but it uses NuWro as its base MC predictor. The code produces similar plots to those created by PeLEE/analysis.C. Run the code using the following:
 
@@ -59,7 +61,7 @@ s.main()
 
 ### XSec Folder
 
-#### RooUnfold
+#### RooUnfold Folder
 This folder is a clone of the [RooUnfold repository]([url](https://gitlab.cern.ch/RooUnfold/RooUnfold)). We make use of RooUnfold's implementation of D'Agostini to unfold the data from reconstructed space to true space. Note: the files in this folder are specific to my personal laptop i.e. individuals will not be able to run the following code without a system specific copy of RooUnfold. It should be as simple as redoing the make. 
 
 #### Xsec/Systematics Folder
@@ -95,12 +97,8 @@ s.main()
 ```
 
 - neutrino_flux.h: Calculates the flux normalization factor and makes a pretty plot
-- iterations.h: 
-- closure_test.h: 
-- mc_model_comparison.h: 
-- iterations.h
-
-
-
-
-
+- iterations.h: Does the iteration test and computes the optimal number of unfolding iterations. 
+- closure_test.h: Ensures that our Smearing matrices are correct
+- mc_model_comparison.h: Computes the cross-section for each of the models and then puts them onto a single plot for comparison. These curves are then used in the cross-section plot with the unfolded data
+- num_iterations.csv: Provides the number of iterations for all the variables. This was hand made.
+- 
