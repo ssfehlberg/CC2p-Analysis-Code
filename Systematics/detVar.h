@@ -1,6 +1,6 @@
 #ifndef other_detvar_h
 #define other_detvar_h
-#include "plotting.h"
+#include "plotting/plotting.h"
 #include "tools/xsec.h"
 #include "tools/Covariance_Matrix.h"
 

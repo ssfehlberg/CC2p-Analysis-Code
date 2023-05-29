@@ -1,6 +1,6 @@
 #define dirt_cxx
 #include "tools/helpers.h"
-#include "tools/plotting.h"
+#include "plotting/plotting.h"
 
 void dirt(){
 

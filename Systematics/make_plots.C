@@ -1,6 +1,6 @@
 #define make_plots_cxx
 #include "tools/helpers.h"
-#include "tools/plotting.h"
+#include "plotting/plotting.h"
 
 void make_plots(){
 
