@@ -1,6 +1,6 @@
 #include "shared.h"
 
-class GENIE_total{
+class GENIE_plot{
 
  public:
   virtual void main();
@@ -64,7 +64,7 @@ class GENIE_total{
     
 }; //end of class definition
 
-void GENIE_total::main(){
+void GENIE_plot::main(){
 
   //Grab the histograms
   /////////////////////
@@ -131,7 +131,7 @@ void GENIE_total::main(){
   
 } //end of main
 
-void GENIE_total::Grab_Histograms(){
+void GENIE_plot::Grab_Histograms(){
 
   for(int f=0; f < num_files; f++){
     file[f] =  new TFile(Form("../root_files/%s/systematics.root",file_names[f]));
@@ -159,7 +159,7 @@ void GENIE_total::Grab_Histograms(){
 
 ////////////////////
 
-void GENIE_total::plot_total_error(const char* variable, bool flip_legend , std::vector<TH1D*> hist,const char* title, TH1D* h_total){
+void GENIE_plot::plot_total_error(const char* variable, bool flip_legend , std::vector<TH1D*> hist,const char* title, TH1D* h_total){
 
   Color_t colors[] = {kRed, kRed, kOrange+6, kOrange+6, kYellow-3, kYellow-3, kGreen+2 ,kGreen+2, kBlue, kBlue, kViolet+1, kViolet+1,kMagenta};
   int line_style[] = {1,9,1,9,1,9,1,9,1,9,1,9,1};

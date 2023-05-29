@@ -1,7 +1,4 @@
-//#include "shared.h"
-
-
-class plot_all{
+class all_plot{
 
  public:
   virtual void main();
@@ -66,7 +63,7 @@ class plot_all{
 //////////////
 //[main]
 //////////////////
-void plot_all::main(){
+void all_plot::main(){
 
   /* //Defining all the classes
   //////////////////////////
@@ -145,7 +142,7 @@ void plot_all::main(){
 //[Grab_Histograms]
 //Grabs histograms from relevant files
 ///////////////////
-void plot_all::Grab_Histograms(){
+void all_plot::Grab_Histograms(){
 
   for(int f=0; f < num_files; f++){
     
@@ -182,7 +179,7 @@ void plot_all::Grab_Histograms(){
 //title: title of plot and x axis
 //h_total: addition in quadrature of all sources in hist.  
 //////////////////////////
-void plot_all::plot_total_error(const char* variable, bool flip_legend,std::vector<TH1D*> hist,const char* title, TH1D* h_total){
+void all_plot::plot_total_error(const char* variable, bool flip_legend,std::vector<TH1D*> hist,const char* title, TH1D* h_total){
 
   //Stuff for Drawing
   /////////////////////
