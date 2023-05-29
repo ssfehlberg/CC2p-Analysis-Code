@@ -17,7 +17,7 @@ std::pair<double,double> Flux::calculate_flux(){
   double pot_num = 6.79E+20;
   
   //Neutrino flux stuff
-  TFile* flux_file = new TFile("../../root_files/pelee/Run_all/neutrino_flux.root","READ");
+  TFile* flux_file = new TFile("/Users/ssfehlberg/Research/Thesis/2Proton_Pandora/root_files/pelee/Run_all/neutrino_flux.root","READ");
   TCanvas* canv_flux = new TCanvas("canv_flux","canv_flux",700,500);
   TH1D* h_flux = (TH1D*)flux_file->Get("hEnumu_cv");
   double scale_factor= 1/(4997.*5e8)/(256.35*233);
