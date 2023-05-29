@@ -2,19 +2,19 @@
 Ths repository contains a variety of code used to produce event distributions, MC distributions, and cross section distributions for the CC2p Analysis. 
 
 ## root_files Folder
-This contains a variety of root files that were generated on the GPVMs. 
+This contains a variety of root files that were generated on the GPVMs. Further explanation is provided below
 
-### root_files/GCF
+* root_files/GCF
 CC2p signal events selected from a zombie version of GENIE that used the GCF. This model is not used in the analysis as it was confirmed that Q2 of the BNB is too low to notice these effects.
-### root_files/MEC
+* root_files/MEC
 These root files use different combinations of MEC event generators and if FSI are turned on or not.
-### root_files/filtered
+* root_files/filtered
 These are remenants from the 3 prong filter I had built. Instead of using events filtered by that module, we use the PeLEE ntuples.
-### root_files/nuwro
+* root_files/nuwro
 In addition to the traditional Overlay MC sample, MicroBooNE also generated an overlay sample that used NuWro as the base model. These contain selected CC2p events from those samples.
-### root_files/pelee
+* root_files/pelee
 These are the BNB, EXT, Dirt, and Overlay CC2p events selected from the respective PeLEE ntuples. 
-### root_files/unfiltered
+* root_files/unfiltered
 I believe these were used to study raw event distributions, but I don't totally remember.
 
 ## Event Distribution Plots
