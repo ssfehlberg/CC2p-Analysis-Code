@@ -114,23 +114,78 @@ systematics s
 s.main()
 ```
 * **dirt.h:** Class to produce dirt covariance matrices
-* **detvar.h:** Class to produce the detector variation covariance matrices
+* **detvar.h:** Class to produce the detector variation covariance matrices. Treated using a unisim approach.
 * **mutlsims.h:** Produces the covariance matrices for the flux, reinteraction, and all MC uncertainties.
 
+### Systematics/plotting Folder
+All the code in this directory is for making plots of the various different systematics produced in the previous step. You must run it in the following order:
+
+ * **GENIE_plot.C:** Plots the fractional uncertainty from each GENIE MC contribution and creates the total GENIE fractional uncertainty curve. Also produces the total GENIE MC correlation matrix.
+ ```
+ # Run inside of Xsec/Systematics/plotting folder
+ root -b GENIE_plot.C
+ GENIE_plot s
+ s.main()
+ ```
+ * **detvar_plot.C:** Plots the fractional uncertainty from each detector variation contribution and creates the total detector variation fractional uncertainty curve. Also produces the total detector variation correlation matrix. Run using the following:
+ ```
+ # Run inside of Systematics/plotting folder
+ root -b detvar_plot.C
+ detvar_plot s
+ s.main()
+ ```
+  * **all_plot.C:** Plots the fractional uncertainty from all sources of error. root -b all_plot.C
+ * **total_correlation_matrix.C**: Meant to create the total correlation matrix. Run using the following:
+ ```
+ # Run inside of Xsec/Systematics/plotting folder
+ root -b total_correlation_matrix.C
+ total_correlation_matrtix s
+ s.main()
+ ``` 
+
+ * **total_covariance_matrix:** Creates the total covariance matrix by adding all the covariance matrices together.
+ ```
+ # Run inside of Xsec/Systematics/plotting folder
+ root -b total_covariance_matrtix.C
+ total_covariance_matrtix s
+ s.main()
+ ``` 
+ * **total_covariance_matrix_no_stat.C:** Same as above, but doesn't include the statistical uncertainty for the purpose of creating the shape and normalization uncertainties.
+ ```
+ # Run inside of Xsec/Systematics/plotting folder
+ root -b total_covariance_matrtix_no_stat.C
+ total_covariance_matrtix_no_stat s
+ s.main()
+ ``` 
+ * **norm_and_shape.C:** Determines the normalization and shape uncertainties. Run using the following: 
+ ```
+ # Run inside of Xsec/Systematics/plotting folder
+ root -b norm_and_shape.C
+ norm_and_shape s
+ s.main()
+ ``` 
+ * **plotting.h:** Helpful plotting header file.
+ * **shared.h:** Seems similar to plotting.h, but seems to be used instead. Not sure why.
+ * **shared_class.h** Class version of above code.
+
 ### XSec Folder
+This is the main folder for creating the cross section distributions. 
 
 * **xsec.C/xsec.h:** Produces the cross-section curves shown in the paper. If you want to run this code, do the following:
 ```
 # Run inside of XSec Folder
 root -b
-gSystem->Load(“RooUnfold/libRooUnfold.so”);
+gSystem->Load(“RooUnfold/libRooUnfold.so”); # point to wherever this file lives on your system.
 .L xsec.C
 xsec s
 s.main()
 ```
-* **neutrino_flux.h: Calculates the flux normalization factor and makes a pretty plot
-* **iterations.h: Does the iteration test and computes the optimal number of unfolding iterations. 
-* **closure_test.h: Ensures that our Smearing matrices are correct
-* **mc_model_comparison.h: Computes the cross-section for each of the models and then puts them onto a single plot for comparison. These curves are then used in the cross-section plot with the unfolded data
-* **num_iterations.csv: Provides the number of iterations for all the variables. This was hand made.
-* 
+ * **neutrino_flux.h:** Calculates the flux normalization factor and makes a pretty plot
+ * **iterations.h:** Does the iteration test and computes the optimal number of unfolding iterations. 
+ * **closure_test.h:** Ensures that our Smearing matrices are correct
+ * **mc_model_comparison.h:** Computes the cross-section for each of the models and then puts them onto a single plot for comparison. These curves are then used in the cross-section plot with the unfolded data
+ * **num_iterations.csv:** Provides the number of iterations for all the variables. This was hand made.
+ * **one_iteration.csv:** An example of a single iteration that was used to determine the difference induced by using a different number of iterations.
+ * **constants.h:** Variety of different parameters.  
+* **CC2p_Chi2Calc.cxx:** Code from Afro to calculate the Chi2 between the data and different MC generators. It differs from a traditional chi2 in that it also uses the covariance matrix. The outputs were saved to a root file ("CC2p_xsec_results.root") to be used for further study.
+* **nuwro.C:** This code was originally used in an effort to determine the number of iterations to unfold by comparing to the NuWro samples. Unfortunately, the underlying models between NuWro and the MicroBooNE Tune were so different, that this was not a helpful test. We instead compared the chi2 between adjacent numbers of iterations to determine the optimal number of unfolding computations. 
