@@ -21,16 +21,23 @@ class xsec{
   virtual TH1D* make_efficiency_plot(TH1D* h_num, TH1D* h_denom,const char* title, const char* name);
   virtual void plot_matrices(TH2D* h_matrix,const char* title, const char* name);
   virtual TH1D* make_bnb_plot(TH1D* h_ext_input, TH1D* h_dirt_input,TH1D* h_overlay_total_input, TH1D* h_overlay_cc2p_input, TH1D* h_bnb_input, const char* name);
-  virtual std::vector<TH1D*> mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_GCF, bool print_contents = true);
+  virtual std::vector<TH1D*> mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_nuisance, TH1D* h_GCF, bool print_contents = true);
   virtual void Fix_Systematic(TH1D* h,TH1D* h_MC_CV,TH1D* h_systematic, bool print_contents);
-  virtual void cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_GCF,
+  virtual void Get_Systematic(TH1D* h,TH1D* h_stat,TH2D* h_covariance, bool print_contents);
+  virtual double Chi2(TH1D* h_bnb,TH1D* h_sys,TH1D* hist);
+  virtual double Chi2_Cov(TH1D* h_data, TH1D* h_mc, TH2D* h_cov);
+  virtual double CalcChiSquared(TH1D* h_model, TH1D* h_data, TH2D* cov, double &chi);
+  virtual void Ratio_Plot(TH1D* h_xsec, TH1D* h_uboone, TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_nuwro, TH1D* h_systematic,int iter, const char* title, const char* name);
+  virtual void cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_nuisance, TH1D* h_GCF,
 			     TH1D* h_ext_input, TH1D* h_dirt_input,TH1D* h_overlay_total_input, TH1D* h_overlay_cc2p_input, TH1D* h_bnb_input,
 			     TH2D* h_smearing, int iter, TH1D* h_eff_input, TH1D* h_denom_input,TH1D* h_denom_nuwro_input,
-			     TH1D* h_systematic,double maximum, const char* title, const char* name,bool flip_legend,bool print_contents = true);
+			     TH1D* h_systematic,TH2D* h_covariance,double maximum, const char* title, const char* name,bool flip_legend,bool print_contents = true);
 
 
 private:
 
+  const char* unit_title; //units for the cross-section plots 
+  
   TH1D* h_muon_nuwro_denom[num_var];
   TH1D* h_leading_nuwro_denom[num_var];
   TH1D* h_recoil_nuwro_denom[num_var];
@@ -56,7 +63,10 @@ void xsec::Grab_Histograms(){
   TFile* f_empirical = new TFile("/Users/ssfehlberg/Research/Thesis/2Proton_Pandora/root_files/MEC/hists_empirical_lwellyn_fsi.root");
   TFile* f_nieves = new TFile("/Users/ssfehlberg/Research/Thesis/2Proton_Pandora/root_files/MEC/hists_nieves_fsi.root");
   TFile* f_susa = new TFile("/Users/ssfehlberg/Research/Thesis/2Proton_Pandora/root_files/MEC/hists_susav2_fsi.root");
+  TFile* f_nuisance = new TFile("/Users/ssfehlberg/Research/Thesis/2Proton_Pandora/root_files/MEC/hists_Nusiance_fsi_xsec.root");
   TFile* f_GCF = new TFile("/Users/ssfehlberg/Research/Thesis/2Proton_Pandora/root_files/GCF/hists_GCF_CCQE_fsi.root");
+
+  TFile* f_covar = new TFile("Systematics/root_files/Total_Error/total_covariance_matrices.root"); //total covariance matrices
   
   for(int i=0; i < num_var; i++){
 
@@ -98,20 +108,28 @@ void xsec::Grab_Histograms(){
     h_empirical_muon[i] = (TH1D*)f_empirical->Get(Form("h_muon%s_lead_cut",var0[i])); //empirical
     h_nieves_muon[i] = (TH1D*)f_nieves->Get(Form("h_muon%s_lead_cut",var0[i])); //nieves
     h_susa_muon[i] = (TH1D*)f_susa->Get(Form("h_muon%s_lead_cut",var0[i])); //susa
+    h_nuisance_muon[i] = (TH1D*)f_nuisance->Get(Form("h_muon%s_lead_cut",var0[i]));
     h_GCF_muon[i] = (TH1D*)f_GCF->Get(Form("h_muon%s_lead_cut",var0[i])); //gcf
 
     h_nuwro_leading[i] = (TH1D*)f_nuwro->Get(Form("h_leading%s_total",var0[i])); //nuwro
     h_empirical_leading[i] = (TH1D*)f_empirical->Get(Form("h_leading%s_lead_cut",var0[i])); //empirical
     h_nieves_leading[i] = (TH1D*)f_nieves->Get(Form("h_leading%s_lead_cut",var0[i])); //nieves
     h_susa_leading[i] = (TH1D*)f_susa->Get(Form("h_leading%s_lead_cut",var0[i])); //susa
+    h_nuisance_leading[i] = (TH1D*)f_nuisance->Get(Form("h_leading%s_lead_cut",var0[i]));
     h_GCF_leading[i] = (TH1D*)f_GCF->Get(Form("h_leading%s_lead_cut",var0[i])); //gcf
 
     h_nuwro_recoil[i] = (TH1D*)f_nuwro->Get(Form("h_recoil%s_total",var0[i])); //nuwro
     h_empirical_recoil[i] = (TH1D*)f_empirical->Get(Form("h_recoil%s_lead_cut",var0[i])); //empirical
     h_nieves_recoil[i] = (TH1D*)f_nieves->Get(Form("h_recoil%s_lead_cut",var0[i])); //nieves
     h_susa_recoil[i] = (TH1D*)f_susa->Get(Form("h_recoil%s_lead_cut",var0[i])); //susa
+    h_nuisance_recoil[i] = (TH1D*)f_nuisance->Get(Form("h_recoil%s_lead_cut",var0[i]));
     h_GCF_recoil[i] = (TH1D*)f_GCF->Get(Form("h_recoil%s_lead_cut",var0[i])); //gcf
 
+    //Total Covariance Matrices
+    h_covar_muon[i] = (TH2D*)f_covar->Get(Form("h_2D_covariancemuon_%s",var0[i]));
+    h_covar_leading[i] = (TH2D*)f_covar->Get(Form("h_2D_covarianceleading_%s",var0[i]));
+    h_covar_recoil[i] = (TH2D*)f_covar->Get(Form("h_2D_covariancerecoil_%s",var0[i]));
+    
   }
 
   for(int i=0; i < num_other_var; i++){
@@ -136,27 +154,32 @@ void xsec::Grab_Histograms(){
     h_empirical_other[i] = (TH1D*)f_empirical->Get(Form("h%s_lead_cut",other_var[i])); //empirical
     h_nieves_other[i] = (TH1D*)f_nieves->Get(Form("h%s_lead_cut",other_var[i])); //nieves
     h_susa_other[i] = (TH1D*)f_susa->Get(Form("h%s_lead_cut",other_var[i])); //susa
+    h_nuisance_other[i] = (TH1D*)f_nuisance->Get(Form("h%s_lead_cut",other_var[i]));
     h_GCF_other[i] = (TH1D*)f_GCF->Get(Form("h%s_lead_cut",other_var[i])); //gcf
 
+    //total covariance matrices
+    h_covar_other[i] = (TH2D*)f_covar->Get(Form("h_2D_covariance%s",other_var[i]));
+    
     //MC Models: Truth level for neutrino energy and pn
     if(i == 5 || i == 6){
 
       h_empirical_other_true[i] = (TH1D*)f_empirical->Get(Form("h%s_lead_cut",other_var[i])); //empirical
       h_nieves_other_true[i] = (TH1D*)f_nieves->Get(Form("h%s_lead_cut",other_var[i])); //nieves
       h_susa_other_true[i] = (TH1D*)f_susa->Get(Form("h%s_lead_cut",other_var[i])); //susa
+      h_nuisance_other[i] = (TH1D*)f_nuisance->Get(Form("h%s_lead_cut",other_var[i]));
       h_GCF_other_true[i] = (TH1D*)f_GCF->Get(Form("h%s_lead_cut",other_var[i])); //gcf  
 
       h_empirical_other[i] = (TH1D*)f_empirical->Get(Form("h%s_true_lead_cut",other_var[i])); //empirical
       h_nieves_other[i] = (TH1D*)f_nieves->Get(Form("h%s_true_lead_cut",other_var[i])); //nieves
       h_susa_other[i] = (TH1D*)f_susa->Get(Form("h%s_true_lead_cut",other_var[i])); //susa
+      h_nuisance_other[i] = (TH1D*)f_nuisance->Get(Form("h%s_lead_cut",other_var[i]));
       h_GCF_other[i] = (TH1D*)f_GCF->Get(Form("h%s_true_lead_cut",other_var[i])); //gcf  
     }
-    
   }
 
   //Systematic Uncertainty
   ////////////////////////
-  TFile* f_systematic = new TFile("Systematics/root_files/total_error.root");
+  TFile* f_systematic = new TFile("Systematics/root_files/total_error.root"); //this total error includes flux, reint, GENIE total, detvar, dirt, and iteration uncertainty
 
    for(int i = 0; i < num_var; i++){
      h_muon_systematic[i] = (TH1D*)f_systematic->Get(Form("hist_fractional_errors_muon%s",var0[i]));
@@ -232,9 +255,9 @@ void xsec::plot_matrices(TH2D* h_matrix,const char* title, const char* name){
   h_matrix->Draw("colz text");
   h_matrix->SetTitle(Form("%s ; True %s; Reco. %s",title,title,title));
 
-  TLatex* t;
-  t->DrawLatex(0.3,0.92,Form("%s",pot_num));
-  t->DrawLatex(0.82,0.92,Form("%s",sample_name));
+  /* TText* t;
+  t->DrawText(0.3,0.92,Form("%s",pot_num0));
+  t->DrawText(0.82,0.92,Form("%s",sample_name0));*/
   canv_matrix->Update();
   canv_matrix->Print(Form("images/Prep/%s_matrix.png",name));
   
@@ -272,8 +295,8 @@ void xsec::plot_matrices(TH2D* h_matrix,const char* title, const char* name){
   h_matrix_normalized->Draw("colz text");
   h_matrix_normalized->SetTitle(Form("%s; True %s; Reco. %s",title,title,title));
 
-  t->DrawLatex(0.3,0.92,Form("%s",pot_num));
-  t->DrawLatex(0.82,0.92,Form("%s",sample_name));
+  /* t->DrawText(0.3,0.92,Form("%s",pot_num));
+     t->DrawText(0.82,0.92,Form("%s",sample_name));*/
   canv1_matrix->Update();
   canv1_matrix->Print(Form("images/Prep/%s_smearing_matrix.png",name));
       
@@ -322,7 +345,7 @@ TH1D* xsec::make_bnb_plot(TH1D* h_ext_input, TH1D* h_dirt_input,TH1D* h_overlay_
       
 }
 
-std::vector<TH1D*> xsec::mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_GCF, bool print_contents = true){
+std::vector<TH1D*> xsec::mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D*  h_nuisance, TH1D* h_GCF, bool print_contents = true){
 
   //Before we can plot the MEC models on the same plot as the BNB, we have to "normalize" using the procedure outlined
   // in section 7.4 of this document: https://arxiv.org/pdf/2101.11867.pdf
@@ -361,7 +384,14 @@ std::vector<TH1D*> xsec::mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_sus
     double SD_susa = (sigma_susa)/(delta_x*N_susa) * std::sqrt(((N_susa - n_susa)*n_susa)/(N_susa));
     h_susa->SetBinContent(i,value_susa);
     h_susa->SetBinError(i,SD_susa);
-                                                                           
+
+    //nuisance
+    double n_nuisance = h_nuisance->GetBinContent(i);
+    double value_nuisance = (sigma_nuisance * n_nuisance)/(N_nuisance * delta_x);
+    double SD_nuisance = (sigma_nuisance)/(delta_x*N_nuisance) * std::sqrt(((N_nuisance - n_nuisance)*n_nuisance)/(N_nuisance));
+    h_nuisance->SetBinContent(i,value_nuisance);
+    h_nuisance->SetBinError(i,SD_nuisance);
+
     //Dealing with the GCF is a bit trickier
     //Each event in the GCF is assigned a weight which modifies the CCQE differential cross section
     double n_GCF = h_GCF->GetBinContent(i); 
@@ -388,6 +418,11 @@ std::vector<TH1D*> xsec::mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_sus
       std::cout<<sigma_susa*n_susa<<std::endl;
       std::cout<<N_susa * delta_x<<std::endl;
       std::cout<<"Value_susa: "<<value_susa<<std::endl;
+
+      std::cout<<"n_nuisance: "<<n_nuisance<<std::endl;
+      std::cout<<sigma_nuisance*n_nuisance<<std::endl;
+      std::cout<<N_nuisance * delta_x<<std::endl;
+      std::cout<<"Value_nuisance: "<<value_nuisance<<std::endl;
       
       std::cout<<"n_GCF: "<<n_GCF<<std::endl;
       std::cout<<"Value_GCF: "<<value_GCF<<std::endl;
@@ -398,6 +433,7 @@ std::vector<TH1D*> xsec::mc_plots(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_sus
   mc_vector.push_back(h_empirical);
   mc_vector.push_back(h_nieves);
   mc_vector.push_back(h_susa);
+  mc_vector.push_back(h_nuisance);
   mc_vector.push_back(h_GCF);
 
   return mc_vector;
@@ -422,17 +458,339 @@ void xsec::Fix_Systematic(TH1D* h,TH1D* h_MC_CV,TH1D* h_systematic, bool print_c
   }
 }
 
-void xsec::cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_GCF,
+//Changes the systematics from fraactional uncertainty to cross-section uncertainty
+void xsec::Get_Systematic(TH1D* h,TH1D* h_stat, TH2D* h_covariance, bool print_contents){
+
+  double nbins = h_stat->GetXaxis()->GetNbins();
+  TH2D* h_covar_clone = (TH2D*)h_covariance->Clone();
+  //h_covar_clone->Scale(1E76);
+  
+  for(int i = 1; i < nbins+1; i++){
+    double stat_unc = h_stat->GetBinError(i);
+    double covar_element = h_covar_clone->GetBinContent(i,i);
+    double value = std::sqrt(covar_element - std::pow(stat_unc,2));
+    h->SetBinError(i,value);
+
+    if(print_contents){
+      std::cout<<"Value of i: "<<i<<std::endl;
+      std::cout<<"Value of statistical uncertainty: "<<stat_unc<<std::endl;
+      std::cout<<"Value of Covar_element for i i: "<<covar_element<<std::endl;
+      std::cout<<"Value of Value: "<<value<<std::endl;
+    }
+  }
+  delete h_covar_clone;
+  
+}
+
+//Chi2: Calculates the chi2 using chi2 = sum_{i = 1,# of x bins} (Data_i - MC_i)^2/(Total_Error_i)
+//NOTE: This particuolar version of chi2 assumes no correlations between bins in the covariance matrix
+// i.e. the covariance matrix is diagonal. In general, this is not true, so we must use the weighted least squares calculation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+double xsec::Chi2(TH1D* h_bnb,TH1D* h_sys,TH1D* hist){
+
+  int nbins = h_bnb->GetNbinsX();
+  double chi2 = 0;
+  
+  for(int i = 1; i < nbins+1; i++){
+
+    double observed_i = h_bnb->GetBinContent(i);
+    double expected_i = hist->GetBinContent(i);
+
+    double stat_error = h_bnb->GetBinError(i);
+    double sys_error = h_sys->GetBinError(i);
+    double bin_error = std::pow(stat_error,2) + std::pow(sys_error,2);
+
+    if(bin_error == 0.0){
+      chi2 += 0;
+    }
+    else{
+      chi2 += std::pow((observed_i - expected_i),2)/(bin_error);
+      //std::cout<<"Value of obsesrved in bin: "<<observed_i<<std::endl;
+      //std::cout<<"Value of expected in bin: "<<expected_i<<std::endl;
+      //std::cout<<"Value of stat error: "<<stat_error<<std::endl;
+      //std::cout<<"Value of sys error: "<<sys_error<<std::endl;
+      //std::cout<<"Value of bin error: "<<bin_error<<std::endl;
+      //std::cout<<"Value of chi2 in the loop: "<<chi2<<std::endl;
+    } 
+  }
+
+  //std::cout<<"value of chi2: "<<chi2<<std::endl;
+  
+  return chi2;
+  
+}
+
+
+//Chi2_Cov: Calculates the chi2 using weighted least squares i.e. chi2 = r^T * W * r
+// where r is the residuals and W is the inverse of the covariance matrix.
+// When talking about cross sections this equation becomes the follwoing:
+// chi2 = sum_i sum_j (Data_i - MC_i)*(Covariance_ij)^(-1)*(Data_j - MC_j)
+// where i and j run from 1 to # of bins. Note that the Covariance Matrix is the
+// total covariance matrix (i.e. systematic + statistical). 
+////////////////////////////////////////////////////////////////////////
+double xsec::Chi2_Cov(TH1D* h_data, TH1D* h_mc, TH2D* h_cov){
+
+  TH1D* h_model_clone = (TH1D*)h_mc->Clone();
+  TH1D* h_data_clone  = (TH1D*)h_data->Clone();
+  TH2D* h_cov_clone   = (TH2D*)h_cov->Clone();
+  
+  int nbins_x = h_cov_clone->GetNbinsX();
+  int nbins_y = h_cov_clone->GetNbinsY();
+  double chi2 = 0;
+
+  //Creating the covariance matrix from the TH2D object
+  ////////////////////////////////////////////////////
+  TMatrixD covariance_matrix;
+  covariance_matrix.Clear();
+  covariance_matrix.ResizeTo(nbins_x,nbins_y);
+  for(int i=0; i < nbins_x; i++){
+    for(int j=0; j < nbins_y; j++){
+      covariance_matrix[i][j] = h_cov_clone->GetBinContent(i+1,j+1);
+    }
+  }
+
+  TMatrixD copy_covar_matrix = covariance_matrix; //Copy of the covariance matrix
+  TMatrixD inver_covar_matrix = covariance_matrix.Invert(); //inverse of the covariance matrix
+
+  //Checking to make sure we get the identiy matrix
+  /*if(_debug){
+    TMatrixD Iden;
+    Iden.Mult(covariance_matrix,inver_covar_matrix); //should be the identity matrix
+    for(int i=0; i < nbins_x+1; i++){
+      for(int j=0; j < nbins_y+1; j++){
+	std::cout<<Form("Value of Identity Matrix at i=%d and j=%d: %f",i,j,Iden[i][j])<<std::endl;
+      }
+    }    
+    } //end of debug loop*/
+
+  //Now to calculate the chi2
+  ///////////////////////////
+  for(int i = 0; i < nbins_x; i++){
+    for(int j = 0; j < nbins_x; j++){
+      double diff_i = h_data_clone->GetBinContent(i+1) - h_model_clone->GetBinContent(i+1);
+      double diff_j = h_data_clone->GetBinContent(j+1) - h_model_clone->GetBinContent(j+1);
+
+      if(i==j){
+	double LocalChi = diff_i * inver_covar_matrix[i][j] * diff_j; 
+	chi2 += LocalChi;
+      }
+    } 
+  }
+  
+  delete h_model_clone;
+  delete h_data_clone;
+  delete h_cov_clone;
+
+  
+  if(_debug) std::cout<<Form("value of chi2: %f",chi2)<<std::endl;
+  return chi2;
+  
+}
+
+//Afro's Chi2 calculator
+double xsec::CalcChiSquared(TH1D* h_model, TH1D* h_data, TH2D* cov, double &chi){//, int &ndof, double &pval) {
+
+  std::cout<<"[CalcChiSquared]: Beginning Calculation"<<std::endl;
+  
+  // Clone them so we can scale them 
+    TH1D* h_model_clone = (TH1D*)h_model->Clone();
+    TH1D* h_data_clone  = (TH1D*)h_data->Clone();
+    TH2D* h_cov_clone   = (TH2D*)cov->Clone();
+    //h_cov_clone->Scale(1E76);
+    
+    int NBins = h_cov_clone->GetNbinsX();
+    // Getting covariance matrix in TMatrix form
+    TMatrixD cov_m;
+    cov_m.Clear();
+    cov_m.ResizeTo(NBins,NBins);
+    // loop over rows
+    for (int i = 0; i < NBins; i++) {           
+        // loop over columns
+        for (int j = 0; j < NBins; j++) {
+            cov_m[i][j] = h_cov_clone->GetBinContent(i+1, j+1);
+        }
+    }
+    TMatrixD copy_cov_m = cov_m;
+    // Inverting the covariance matrix
+    TMatrixD inverse_cov_m = cov_m.Invert();
+    // Calculating the chi2 = Summation_ij{ (x_i - mu_j)*E_ij^(-1)*(x_j - mu_j)  }
+    // x = data, mu = model, E^(-1) = inverted covariance matrix 
+    chi = 0.;
+    
+    for (int i = 0; i < NBins; i++) {
+        //double XWidth = h_data_clone->GetBinWidth(i+1);
+        for (int j = 0; j < NBins; j++) {
+            //double YWidth = h_data_clone->GetBinWidth(i+1);
+            double diffi = h_data_clone->GetBinContent(i+1) - h_model_clone->GetBinContent(i+1);
+            double diffj = h_data_clone->GetBinContent(j+1) - h_model_clone->GetBinContent(j+1);
+	    double LocalChi = diffi * inverse_cov_m[i][j] * diffj; 
+	    chi += LocalChi;
+	    std::cout<<"[CalcChiSquared]:Value of diffi for i="<<i<<": "<<diffi<<std::endl;
+            std::cout<<"[CalcChiSquared]:Value of diffj for j="<<j<<": "<<diffj<<std::endl;
+	    std::cout<<"[CalcChiSquared]:Value of inverse_cov_m for i="<<i<<" j="<<j<<": "<<inverse_cov_m[i][j]<<std::endl;
+	    std::cout<<"[CalcChiSquared]:Value of LocalChi for i="<<i<<" j="<<j<<": "<<LocalChi<<std::endl;
+	    std::cout<<"[CalcChiSquared]:Value of SumChi for i="<<i<<" j="<<j<<": "<<chi<<std::endl;
+	    
+        }
+    }
+    delete h_model_clone;
+    delete h_data_clone;
+    delete h_cov_clone;
+
+    std::cout<<"[CalcChiSquared]:Value of Total Chi: "<<chi<<std::endl;
+    return chi;
+}
+
+void xsec::Ratio_Plot(TH1D* h_xsec, TH1D* h_uboone, TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* h_nuwro,TH1D* h_systematic,int iter, const char* title, const char* name){
+
+  gStyle->SetPaintTextFormat("4.2f");
+  
+  TH1D* h_BNB = (TH1D*)h_xsec->Clone();
+  TH1D* h_bnb = (TH1D*)h_xsec->Clone();
+  TH1D* h_UB = (TH1D*)h_uboone->Clone();
+  TH1D* h_Empirical = (TH1D*)h_empirical->Clone();
+  TH1D* h_Nieves = (TH1D*)h_nieves->Clone();
+  TH1D* h_Susa = (TH1D*)h_susa->Clone();
+  TH1D* h_Nuwro = (TH1D*)h_nuwro->Clone();
+ 
+  //Statistical Error
+  TH1D* h_stat_up = (TH1D*)h_BNB->Clone();
+  int nbins = h_BNB->GetNbinsX();
+  for(int i =1; i < nbins+1; i++){
+    double error = h_BNB->GetBinError(i);
+    double content = h_BNB->GetBinContent(i);
+    double frac_error = error/content;
+    h_stat_up->SetBinContent(i, frac_error);
+  }
+  TH1D* h_stat_down = (TH1D*)h_stat_up->Clone();
+  h_stat_down->Scale(-1.0);
+
+  //Systematic Error
+  TH1D* h_sys_up = (TH1D*)h_systematic->Clone();
+  TH1D* h_sys_down = (TH1D*)h_systematic->Clone();
+  h_sys_down->Scale(-1.0);
+  
+  h_BNB->Divide(h_BNB,h_bnb,1,1,"b");
+  h_UB->Divide(h_bnb,h_UB,1,1,"b");
+  h_Empirical->Divide(h_bnb,h_Empirical,1,1,"b");
+  h_Nieves->Divide(h_bnb,h_Nieves,1,1,"b");
+  h_Susa->Divide(h_bnb,h_Susa,1,1,"b");
+  h_Nuwro->Divide(h_bnb,h_Nuwro,1,1,"b");
+
+  for(int i=1; i < nbins+1; i++){
+    h_BNB->SetBinContent(i, (h_BNB->GetBinContent(i) - 1.0));
+    h_UB->SetBinContent(i, (h_UB->GetBinContent(i) - 1.0));
+    h_Empirical->SetBinContent(i, (h_Empirical->GetBinContent(i) - 1.0));
+    h_Nieves->SetBinContent(i, (h_Nieves->GetBinContent(i) - 1.0));
+    h_Susa->SetBinContent(i, (h_Susa->GetBinContent(i) - 1.0));
+    h_Nuwro->SetBinContent(i, (h_Nuwro->GetBinContent(i) - 1.0));  
+  }
+
+  TCanvas* c_ratio = new TCanvas("c_ratio","c_ratio",2000,1500);
+  //c_ratio->SetGridx();
+  h_BNB->Draw("hist");
+  h_BNB->SetLineColor(kBlack);
+  h_BNB->SetLineWidth(4);
+  h_BNB->SetXTitle(Form("%s",title));
+  h_BNB->SetMaximum(3.5);
+  h_BNB->SetMinimum(-1);
+  h_BNB->GetXaxis()->SetTitleSize(50); //35
+  h_BNB->GetXaxis()->SetTitleFont(43);
+  h_BNB->GetXaxis()->SetTitleOffset(1.3);
+  h_BNB->GetXaxis()->SetLabelFont(43);
+  h_BNB->GetXaxis()->SetLabelSize(50);
+  h_BNB->SetYTitle("(Measured-Theoretical)/Theoretical");
+  h_BNB->GetYaxis()->SetTitleSize(50);
+  h_BNB->GetYaxis()->SetTitleFont(43); //4 = hevelatica normal 3 = precision
+  h_BNB->GetYaxis()->SetTitleOffset(1.3);
+  h_BNB->GetYaxis()->SetLabelFont(43);
+  h_BNB->GetYaxis()->SetLabelSize(50);
+
+  h_sys_up->Draw("hist same");
+  h_sys_up->SetFillColorAlpha(kGray,0.4);
+  h_sys_up->SetLineWidth(0);
+  h_sys_down->Draw("hist same");
+  h_sys_down->SetFillColorAlpha(kGray,0.4);
+  h_sys_down->SetLineWidth(0);
+
+  /*h_stat_up->Draw("hist same");
+  h_stat_up->SetFillColorAlpha(kGray+2,0.4);
+  h_stat_up->SetLineWidth(0);
+  h_stat_down->Draw("hist same");
+  h_stat_down->SetFillColorAlpha(kGray+2,0.4);
+  h_stat_down->SetLineWidth(0);*/
+  
+  h_UB->Draw("E same");
+  h_UB->SetLineColor(color1);
+  h_UB->SetLineWidth(4);
+  h_UB->SetMarkerColor(color1);
+  //h_UB->SetMarkerSize(0);
+
+  h_Empirical->Draw("E same");
+  h_Empirical->SetLineColor(color2);
+  h_Empirical->SetLineWidth(4);
+  h_Empirical->SetMarkerColor(color2);
+
+  h_Nieves->Draw("E same");
+  h_Nieves->SetLineColor(color3);
+  h_Nieves->SetLineWidth(4);
+  h_Nieves->SetMarkerColor(color3);
+  
+  h_Susa->Draw("E same");
+  h_Susa->SetLineColor(color4);
+  h_Susa->SetLineWidth(4);
+  h_Susa->SetMarkerColor(color4);
+  
+  h_Nuwro->Draw("E same");
+  h_Nuwro->SetLineColor(color5);
+  h_Nuwro->SetLineWidth(4);
+  h_Nuwro->SetMarkerColor(color5);
+
+  h_BNB->Draw("hist same");
+  
+  //legend stuff
+  TLegend* legend_ratio = new TLegend(0.109, 0.5, 0.859, 0.89);
+  legend_ratio->SetNColumns(2);
+  legend_ratio->SetHeader("MicroBooNE 6.79 x 10^{20} POT, Preliminary","C"); // option "C" allows to center the header 
+  legend_ratio->AddEntry(h_BNB,Form("%d Iterations Unfolded Data",iter),"L");
+  //legend_ratio->AddEntry(h_stat_up,"Stat. Unc.","F");
+    /*legend_ratio->AddEntry(h_sys_up,"Systematic Unc.","F");
+  legend_ratio->AddEntry(h_UB,"LFG + RPA QE + 2p2h + Tuned CCQE + Tunned CCMEC (Stat Unc.)","EL"); //microboone tune
+  legend_ratio->AddEntry(h_Nieves,"LFG + RPA QE + 2p2h","EL"); //nieves
+  legend_ratio->AddEntry(h_Empirical,"BRFG + Standard Model QE + Empirical MEC (Stat Unc.)","EL"); //empirical
+  legend_ratio->AddEntry(h_Susa,"RMFA + Superscaling QE + Superscaling MEC (Stat Unc.)","EL"); //susa
+  legend_ratio->AddEntry(h_Nuwro,"LFG + Standard Model QE + 2p2h (Stat Unc.)","EL"); //nuwro */
+
+  legend_ratio->AddEntry(h_UB,"MicroBooNE Tune","EL"); //microboone tune
+  legend_ratio->AddEntry(h_Nieves,"Nieves QE + MEC (Stat. Unc)","EL"); //nieves
+  legend_ratio->AddEntry(h_Empirical,"Llewellyn QE + Empirical MEC (Stat Unc.)","EL"); //empirical
+  legend_ratio->AddEntry(h_Susa,"SuSAv2 QE + MEC (Stat Unc.)","EL"); //susa
+  legend_ratio->AddEntry(h_Nuwro,"NuWro QE + MEC (Stat Unc.)","EL"); //nuwro
+
+  legend_ratio->SetLineWidth(0);
+  legend_ratio->SetFillColor(kWhite);
+  //legend_ratio->SetTextSize(0.027);
+  legend_ratio->Draw("SAME");
+
+  c_ratio->Print(Form("images/XSec/ratio%s.png",name));
+  //c_ratio->Print(Form("images/XSec/ratio%s.pdf",name));
+
+}
+
+
+void xsec::cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D*  h_nuisance, TH1D* h_GCF,
 			 TH1D* h_ext_input, TH1D* h_dirt_input,TH1D* h_overlay_total_input, TH1D* h_overlay_cc2p_input, TH1D* h_bnb_input,
 			 TH2D* h_smearing, int iter, TH1D* h_eff_input, TH1D* h_denom_input,TH1D* h_denom_nuwro_input,
-			 TH1D* h_systematic,double maximum, const char* title, const char* name,bool flip_legend,bool print_contents = true){
+			 TH1D* h_systematic,TH2D* h_covariance,double maximum, const char* title, const char* name,bool flip_legend,bool print_contents = true){
 
 
-  std::cout<<"Name at beginning: "<<name<<std::endl;
+  //gStyle->SetPaintTextFormat("4.2f");
+  gStyle->SetEndErrorSize(10);
+  //gStyle->SetOptStat(0);
   
   //First we have to get the MC Vector
   /////////////////////////////////////
-  std::vector<TH1D*> mc_plot_vector = mc_plots(h_empirical,h_nieves,h_susa,h_GCF,print_contents);
+  std::vector<TH1D*> mc_plot_vector = mc_plots(h_empirical,h_nieves,h_susa, h_nuisance, h_GCF, print_contents);
 
   //Here is where the magic happens!
   //////////////////////////////////
@@ -450,8 +808,6 @@ void xsec::cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* 
   h_xsec_no_const->SetYTitle("Arb. Units");
   h_xsec_no_const->Draw("1e1p");
   c_xsec_no_const->Print(Form("images/XSec/xsec_without_constants%s.png",name));
-
-  std::cout<<"Name after no Constants: "<<name<<std::endl;
   
   //One with the efficiency applied
   /////////////////////////////////
@@ -468,15 +824,13 @@ void xsec::cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* 
   //One with everything applied
   /////////////////////////////
   TCanvas* c_xsec = new TCanvas("c_xsec","c_xsec",2000,1500);
-  c_xsec->SetGridx();
-  TH1D* h_xsec = (TH1D*)h_unfolded_signal->Clone();
-  h_xsec->Draw("1e1p");
-
-  //drawing denom on the same plot
-  TH1D* h_denom = (TH1D*) h_denom_input->Clone();
-  h_denom->Draw("HIST SAME");
-  h_denom->SetLineColor(color1);
-  h_denom->SetLineWidth(4);
+  //c_xsec->SetGridx();
+  c_xsec->SetRightMargin(0.03);
+  c_xsec->SetLeftMargin(0.13);
+  c_xsec->SetBottomMargin(0.13);
+  c_xsec->SetTopMargin(0.02); 
+  TH1D* h_xsec = (TH1D*)h_unfolded_signal->Clone(); //extracted cross-section
+  TH1D* h_denom = (TH1D*) h_denom_input->Clone(); //denominator of our efficiency aka the uboone tune prediction
 
   //Define a function with the bin widths
   TH1F* h_width=(TH1F*)h_xsec->Clone();
@@ -491,97 +845,158 @@ void xsec::cross_section(TH1D* h_empirical, TH1D* h_nieves, TH1D* h_susa, TH1D* 
   //Divide BNB by Bin Width
   h_xsec->Divide(h_width);
   h_denom->Divide(h_width);
- 
+
   //scale Both MC and BNB by flux and number of targets
   double scale_value = (1)/(1E-38*N_targets*flux_value);
   h_xsec->Scale(scale_value);
   h_denom->Scale(scale_value);
 
-  //Setting all the values now that we are done with all the manipulation
+  //Drawing all the MC curves
   //////////////////////////////////////////////////////////////////
+  h_denom->Draw("HIST"); //Microboone Tune output aka denominator of our efficiency
+  h_denom->SetLineColor(color1);
+  h_denom->SetLineWidth(4);
+  
+  mc_plot_vector[0]->Scale(1/1E-38); //empirical
+  mc_plot_vector[0]->Draw("HIST SAME");
+  mc_plot_vector[0]->SetLineColor(color2);
+  mc_plot_vector[0]->SetLineWidth(4);
+
+  mc_plot_vector[1]->Scale(1/1E-38); //nieves
+  mc_plot_vector[1]->Draw("hist same");
+  mc_plot_vector[1]->SetLineColor(color3);
+  mc_plot_vector[1]->SetLineWidth(4);
+
+  /*  mc_plot_vector[2]->Scale(1/1E-38); //susav2: Test tag from Afro and Steven
+  mc_plot_vector[2]->Draw("hist same");
+  mc_plot_vector[2]->SetLineColor(color4);
+  mc_plot_vector[2]->SetLineWidth(4);*/
+
+  mc_plot_vector[3]->Scale(1/1E-38); //SuSAv2: GENIE v3.2.0 tag
+  mc_plot_vector[3]->Draw("hist same");
+  mc_plot_vector[3]->SetLineColor(kRed);
+  mc_plot_vector[3]->SetLineWidth(4);
+
+  //mc_plot_vector[4]->Scale(1/1E-38); //GCF
+  //mc_plot_vector[4]->Draw("hist same");
+  //mc_plot_vector[4]->SetLineColor(color5);
+  //mc_plot_vector[4]->SetLineWidth(4);
+
+  TH1D* h_denom_nuwro=(TH1D*)h_denom_nuwro_input->Clone(); //nuwro prediction
+  h_denom_nuwro->Divide(h_width);
+  h_denom_nuwro->Scale(scale_value);
+  h_denom_nuwro->Draw("HIST SAME");
+  h_denom_nuwro->SetLineColor(color5);
+  h_denom_nuwro->SetLineWidth(8);
+  h_denom_nuwro->SetLineStyle(10);
+ 
+  //Now we can draw the data and the systematic
+  ///////////////////////////////////////
+  h_xsec->Draw("1e1p SAME");
   h_xsec->SetLineColor(kBlack);
   h_xsec->SetLineWidth(4);
-  h_xsec->SetMarkerSize(1);
-  h_xsec->SetTitle(Form("%s", title));
-  h_xsec->SetMaximum(maximum);
-  h_xsec->SetMinimum(0);
+  h_xsec->SetMarkerStyle(8);
+  h_xsec->SetMarkerSize(2);
 
-  h_xsec->SetXTitle(Form("%s",title));
-  h_xsec->GetXaxis()->SetTitleSize(50); //35                                                                                                                                                                                                                              
-  h_xsec->GetXaxis()->SetTitleFont(43);
-  h_xsec->GetXaxis()->SetTitleOffset(1.3);
-  h_xsec->GetXaxis()->SetLabelFont(43);
-  h_xsec->GetXaxis()->SetLabelSize(50);
-
-  h_xsec->SetYTitle("Differential Cross-Section [10^{-38} cm^{2} / Argon]");
-  h_xsec->GetYaxis()->SetTitleSize(50);
-  h_xsec->GetYaxis()->SetTitleFont(43); //4 = hevelatica normal 3 = precision                                                                                                                                                                                             
-  h_xsec->GetYaxis()->SetTitleOffset(1.3);
-  h_xsec->GetYaxis()->SetLabelFont(43);
-  h_xsec->GetYaxis()->SetLabelSize(50);
-
-  //Systematics
   TH1D* h_xsec_sys = (TH1D*)h_xsec->Clone();
   TH1D* h_xsec_CV = (TH1D*)h_xsec->Clone();
-
-  Fix_Systematic(h_xsec_sys,h_xsec_CV,h_systematic,true);
+  Get_Systematic(h_xsec_sys,h_xsec_CV,h_covariance,true); //gets the systematic from the covariance matrix
   h_xsec_sys->Draw("1e1p SAME");
   h_xsec_sys->SetLineColor(kBlack);
   h_xsec_sys->SetLineWidth(4);
-  h_xsec_sys->SetMarkerSize(1);
+  h_xsec_sys->SetMarkerStyle(8);
+  h_xsec_sys->SetMarkerSize(2);
 
-  //drawing the different models on the same plot
-  //////////////////////////////////////////////
-  mc_plot_vector[0]->Draw("hist same"); //empirical
-  mc_plot_vector[0]->SetLineColor(color2);
-  mc_plot_vector[0]->SetLineWidth(4);
-  mc_plot_vector[0]->Scale(1/1E-38);
-
-  mc_plot_vector[1]->Draw("hist same"); //nieves
-  mc_plot_vector[1]->SetLineColor(color3);
-  mc_plot_vector[1]->SetLineWidth(4);
-  mc_plot_vector[1]->Scale(1/1E-38);
-
-  mc_plot_vector[2]->Draw("hist same"); //susa
-  mc_plot_vector[2]->SetLineColor(color4);
-  mc_plot_vector[2]->SetLineWidth(4);
-  mc_plot_vector[2]->Scale(1/1E-38);
-
-  //mc_plot_vector[3]->Draw("hist same"); GCF
-  //mc_plot_vector[3]->SetLineColor(color5);
-  //mc_plot_vector[3]->SetLineWidth(4);
-  //mc_plot_vector[3]->Scale(1/1E-38);
-
-  TH1D* h_denom_nuwro=(TH1D*)h_denom_nuwro_input->Clone();
-  h_denom_nuwro->Divide(h_width);
-  h_denom_nuwro->Scale(scale_value);
-  h_denom_nuwro->Draw("hist same");
-  h_denom_nuwro->SetLineColor(color5);
-  h_denom_nuwro->SetLineWidth(4);
-  
+  //Set titles and stuff cause root is dumb
+  ////////////////////////////////////////
+  //h_denom->SetTitle(Form("%s", title));
+  h_denom->SetTitle("");
+  h_denom->SetMaximum(maximum);
+  h_denom->SetMinimum(0);
+  h_denom->SetXTitle(Form("%s",title));
+  h_denom->GetXaxis()->SetTitleSize(60); //35
+  h_denom->GetXaxis()->SetTitleFont(43);
+  h_denom->GetXaxis()->SetTitleOffset(1.3);
+  h_denom->GetXaxis()->SetLabelFont(43); //4 = hevelatica normal 3 = precision
+  h_denom->GetXaxis()->SetLabelSize(60);
+  if(std::strcmp(name,"_muon_mom") ==  0 || std::strcmp(name,"_leading_mom") ==  0 || std::strcmp(name,"_recoil_mom") ==  0 || std::strcmp(name,"_delta_PT") == 0){ unit_title = "GeV/c";}
+  else{ unit_title ="";}
+  h_denom->SetYTitle(Form("Differential Cross-Section [#frac{10^{-38} cm^{2}}{%s Ar}]",unit_title));
+  h_denom->GetYaxis()->SetTitleSize(60);
+  h_denom->GetYaxis()->SetTitleFont(43); //4 = hevelatica normal 3 = precision
+  h_denom->GetYaxis()->SetTitleOffset(1.4);
+  h_denom->GetYaxis()->SetLabelFont(43);
+  h_denom->GetYaxis()->SetLabelSize(60);
   
   //legend stuff
+  /////////////////////////
   TLegend* legend_xsec;
+  int nbins = h_xsec->GetNbinsX();
   if(flip_legend){
-    legend_xsec = new TLegend(0.105, 0.5, 0.584, 0.89);
+    legend_xsec = new TLegend(0.16, 0.56, 0.92, 0.96);
   }else{
-    legend_xsec = new TLegend(0.37, 0.5, 0.859, 0.89);
+    legend_xsec = new TLegend(0.16, 0.56, 0.92, 0.96);
   }
-  legend_xsec->SetHeader("MicroBooNE 6.79 x 10^{20} POT, Preliminary","C"); // option "C" allows to center the header 
-  legend_xsec->AddEntry(h_xsec,Form("%d Iterations Unfolded Data (Stat. + Sys.)",iter),"lepf");
-  legend_xsec->AddEntry(h_denom,"MicroBooNE Tune","L");
-  legend_xsec->AddEntry(mc_plot_vector[0],"Empirical MEC + Lwellyn Smith QE + FSI","L");
-  legend_xsec->AddEntry(mc_plot_vector[1],"Nieves MEC & QE + FSI","L");
-  legend_xsec->AddEntry(mc_plot_vector[2],"SuSav2 MEC + QE + FSI","L");
-  //legend_xsec->AddEntry(mc_plot_vector[3],"GCF + FSI","L");
-  legend_xsec->AddEntry(h_denom_nuwro,"NuWro","L");
+  legend_xsec->SetHeader("#bf{MicroBooNE 6.79 x 10^{20} POT}","C"); // option "C" allows to center the header 
+  legend_xsec->AddEntry(h_xsec,Form("%d Iterations Unfolded Data (Stat. + Sys.)",iter),"p");
+  double chi_uboone = 0;
+  double chi_emp = 0;
+  double chi_nieves = 0;
+  double chi_susa = 0;
+  double chi_nuwro = 0;
+  legend_xsec->AddEntry(h_denom,Form("GENIE MicroBooNE Tune: Tuned Nieves QE + MEC (#chi^{2}/DoF: %4.1f/%d)",CalcChiSquared(h_denom,h_xsec,h_covariance,chi_uboone),nbins),"L");
+  legend_xsec->AddEntry(mc_plot_vector[0],Form("GENIE Empirical: Llewellyn Smith QE + Empirical MEC (#chi^{2}/DoF: %4.1f/%d)",CalcChiSquared(mc_plot_vector[0],h_xsec,h_covariance,chi_emp),nbins),"L");
+  legend_xsec->AddEntry(mc_plot_vector[1],Form("GENIE Nieves: Nieves QE + MEC (#chi^{2}/DoF: %4.1f/%d)",CalcChiSquared(mc_plot_vector[1],h_xsec,h_covariance,chi_nieves),nbins),"L");
+  //legend_xsec->AddEntry(mc_plot_vector[2],Form("GENIE SuSAv2: SuSAv2 QE +MEC (#chi^{2}/DoF: %4.1f/%d)",CalcChiSquared(mc_plot_vector[2], h_xsec, h_covariance,chi_susa),nbins),"L"); //test version from Steven and Afro. Depricated 9/21/22
+  legend_xsec->AddEntry(mc_plot_vector[3],Form("GENIE SuSAv2: SuSAv2 QE +MEC (#chi^{2}/DoF: %4.1f/%d)",CalcChiSquared(mc_plot_vector[3], h_xsec, h_covariance,chi_susa),nbins),"L"); //what I call "nuisance", but is really SuSAv2 from GENIE v3.2.0
+  legend_xsec->AddEntry(h_denom_nuwro,Form("NuWro: Llewellyn Smith QE + Nieves MEC (#chi^{2}/DoF: %4.1f/%d)",CalcChiSquared(h_denom_nuwro, h_xsec, h_covariance,chi_nuwro),nbins),"L");
   legend_xsec->SetLineWidth(0);
   legend_xsec->SetFillColor(kWhite);
-  legend_xsec->SetTextSize(0.03);
+  legend_xsec->SetMargin(0.1); //sets margin for legend
   legend_xsec->Draw("SAME");
 
-  std::cout<<"Name: "<<name<<std::endl;
+  TText *t1 = new TText();
+  t1->SetNDC();
+  t1->SetTextFont(43);
+  t1->SetTextSize(60);
+  t1->SetTextAlign(22);
+  t1->SetTextAngle(0);
+  
+  if(std::strcmp(title,"Unfolded cos(#gamma_{#vec{p}_{L}, #vec{p}_{R}})") == 0){
+    t1->DrawText(0.95,0.95,"(a)");
+  }else if(std::strcmp(title,"Unfolded cos(#gamma_{#vec{p}_{#mu}, #vec{p}_{sum}})") == 0){
+    t1->DrawText(0.95,0.95,"(b)");
+  }
+  
   c_xsec->Print(Form("images/XSec/xsec%s.png",name));
+  delete t1;
+
+  Ratio_Plot(h_xsec,h_denom,  mc_plot_vector[0],  mc_plot_vector[1], mc_plot_vector[2], h_denom_nuwro, h_systematic, iter, title,name);
+
+  std::cout<<"-------------------------------------------"<<std::endl;
+  std::cout<<"Variable Name: "<< title << " Number of Bins: "<< nbins <<std::endl; 
+  for(int i=1; i < nbins+1; i++){
+    double xlow = h_xsec->GetBinLowEdge(i);
+    double xhigh = h_xsec->GetBinLowEdge(i+1);
+    double bin_xsec = h_xsec->GetBinContent(i);
+    double bin_statistical = h_xsec->GetBinError(i);
+    double bin_sys = h_xsec_sys->GetBinError(i);
+    double sys_total = std::pow((std::pow(h_xsec->GetBinError(i),2)+std::pow(h_xsec_sys->GetBinError(i),2)),0.5);
+    std::cout<<"Bin Number: "<<i<<Form(" Bin Range: [%f-%f]",xlow,xhigh)<<" Value of XSec in this Bin: "<<bin_xsec<<" Value of Stat. "<<bin_statistical<<" Value of Sys: "<<bin_sys<<" Value of Total Uncertainty: "<<sys_total<<std::endl;
+  }
+  std::cout<<"-------------------------------------------"<<std::endl;
+
+
+  h_xsec->Write(Form("h_data_xsec%s",name));
+  h_denom->Write(Form("h_uboone_tune_xsec%s",name));
+  mc_plot_vector[0]->Write(Form("h_empirical_xsec%s",name));
+  mc_plot_vector[1]->Write(Form("h_nieves_xsec%s",name));
+  mc_plot_vector[2]->Write(Form("h_susav2_xsec%s",name));
+  mc_plot_vector[3]->Write(Form("h_nuisance_xsec%s",name));
+  h_xsec_sys->Write(Form("h_total_systematic_uncertainty%s",name));
+  TH2D* h_covar = (TH2D*)h_covariance->Clone();
+  h_covar->Write(Form("h_2D_total_covariance_matrix%s",name));
+
   mc_plot_vector.clear();
 	     
 }
